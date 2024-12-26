@@ -8,10 +8,12 @@ on:
     branches:
       - main
     types: [closed]
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true || github.event_name == 'push'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,5 +26,17 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Build project
+        run: npm run build
+
+      - name: Configure git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
       - name: Deploy to GitHub Pages
-        run: npm run deploy
+        run: |
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          npm run deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
